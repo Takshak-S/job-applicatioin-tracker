@@ -3,9 +3,11 @@
 import { Briefcase } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { getSession, signOut } from "@/lib/auth/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
@@ -37,7 +39,7 @@ export default function Navbar() {
                 </Button>
               </Link>
               <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     className="relative h-8 w-8 rounded-full"
