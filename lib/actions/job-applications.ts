@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getSession } from "../auth/auth";
 import connectDB from "../db";
 import { Board, Column, JobApplication } from "../models";
@@ -36,7 +37,7 @@ export async function createJobApplication(data: JobApplicationData) {
     notes,
     columnId,
     boardId,
-    location
+    location,
   } = data;
 
   if (!company || !position || !boardId || !columnId) {
@@ -85,5 +86,68 @@ export async function createJobApplication(data: JobApplicationData) {
     $push: { jobApplications: jobApplication._id },
   });
 
+  revalidatePath("/dashboard");
   return { data: JSON.parse(JSON.stringify(jobApplication)) };
 }
+
+export async function updateJobApplication(
+  id: string,
+  updates: {
+    company?: string;
+    position?: string;
+    location?: string;
+    notes?: string;
+    salary?: string;
+    jobUrl?: string;
+    columnId?: string;
+    order?: number;
+    tags?: string[];
+    description?: string;
+  },
+) {
+  const session = await getSession();
+
+  if (!session?.user) {
+    return { error: "Unauthorized" };
+  }
+
+  const jobApplication = await JobApplication.findById(id);
+
+  if (!jobApplication) {
+    return { error: "Job application not found" };
+  }
+
+  if (jobApplication.userId.toString() !== session.user.id) {
+    return { error: "Unauthorized" };
+  }
+
+  const {columnId,order,...otherUpdates} = updates
+
+  const updatesToApply: Partial<{
+    company?: string;
+    position?: string;
+    location?: string;
+    notes?: string;
+    salary?: string;
+    jobUrl?: string;
+    columnId?: string;
+    order?: number;
+    tags?: string[];
+    description?: string;
+  }> = otherUpdates
+
+  const currentColumnId = jobApplication.columnId.toString();
+  const newColumnId = columnId?.toString() || currentColumnId;
+
+  const isMovingToDifferentColumn = newColumnId && newColumnId !== currentColumnId;
+
+  if (isMovingToDifferentColumn) {
+    await Column.findByIdAndUpdate(currentColumnId, {
+      $pull: { jobApplications: id },
+    })
+
+    const jobsInTargetColumn = await JobApplication.find({ columnId: newColumnId }).sort({ order: 1 });
+  }
+}
+
+
