@@ -3,10 +3,14 @@ import { mongodbAdapter } from 'better-auth/adapters/mongodb';
 import { MongoClient } from 'mongodb';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import { init } from 'next/dist/compiled/webpack/webpack';
 import { initializeUserBoard } from '../init-user-board';
-const client = new MongoClient(process.env.MONGODB_URI!);
-const db=client.db();
+
+if (!process.env.MONGODB_URI) {
+    throw new Error('Please provide MONGODB_URI in .env.local');
+}
+
+const client = new MongoClient(process.env.MONGODB_URI);
+const db = client.db();
 
 export const auth = betterAuth({
     database:mongodbAdapter(db,{
